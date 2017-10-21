@@ -1,0 +1,31 @@
+.buildpath
+.DS_Store
+.idea/
+.vagrant
+.project
+.settings/
+.*.sw*
+.*.un~
+build/
+nbproject
+
+__pycache__/
+
+tmp/
+
+docker-compose.local.yml
+
+# Distribution / packaging
+.Python
+env/
+venv/
+
+# pyenv
+.python-version
+
+# media folder
+media/
+
+# example videos
+input.mp4
+input.mkv

@@ -1,0 +1,16 @@
+version: '2'
+
+services:
+
+  apanaj_optimizer_video:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: apanaj_optimizer_video
+    expose:
+      - "80"
+    environment:
+      - SECRET_KEY=zx8^qa7j[5go[o0?&/kTu88
+      - CELERY_BROKER_URL=pyamqp://
+      - CELERY_RESULT_BACKEND=redis://localhost
+      - MEDIA_FOLDER=/tmp/
