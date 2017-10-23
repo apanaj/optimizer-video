@@ -2,9 +2,13 @@ import subprocess
 import uuid
 import os
 import hashlib
+
+import gridfs
 from flask import Blueprint, request, current_app, jsonify, send_file, url_for
 from urllib.parse import urlparse
 from os.path import splitext, basename
+
+from flask_pymongo import MongoClient
 
 from exception import LargeFileException, FileSizeException
 from tasks import video_converter
@@ -92,10 +96,13 @@ def get_video():
         {'filename': filename,
          'task_id': task.task_id
          }), 202, {
-        'X-Progress': url_for('views.task_status',
-                              task_id=task.task_id,
-                              _external=True)
-    }
+               'X-Progress': url_for('views.task_status',
+                                     task_id=task.task_id,
+                                     _external=True),
+               'X-Pull': url_for('views.download',
+                                 task_id=task.task_id,
+                                 _external=True)
+           }
 
 
 @mod.route('/status/<task_id>')
@@ -123,3 +130,12 @@ def task_status(task_id):
             'status': str(task.info),  # this is the exception raised
         }
     return jsonify(response)
+
+
+@mod.route('/pull/<file_id>')
+def pull_file(file_id):
+    # TODO: send file for client
+    db = MongoClient().video_optimizer
+    fs = gridfs.GridFS(db)
+    file = fs.get(file_id)
+    return send_file(file)

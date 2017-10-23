@@ -1,11 +1,38 @@
 import subprocess
 import re
+import gridfs
+import os
 from os.path import splitext, split, join
+from pymongo import MongoClient
+
+from celery import Task
 
 from extensions import celery_app
 
 
-@celery_app.task(bind=True)
+class CallbackTask(Task):
+    def on_success(self, retval, task_id, args, kwargs):
+        db = MongoClient().video_optimizer
+        fs = gridfs.GridFS(db)
+
+        converted_filepath = retval['output_file']
+        file_id = fs.put(open(converted_filepath, 'rb'))
+        print('FileID: {}'.format(file_id))
+
+        filepath = os.path.dirname(converted_filepath)
+        converted_filename = os.path.basename(converted_filepath)
+        origin_filepath = os.path.join(
+            filepath,
+            converted_filename.replace('convert-', ''))
+
+        os.remove(origin_filepath)
+        os.remove(converted_filepath)
+
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        pass
+
+
+@celery_app.task(base=CallbackTask, bind=True)
 def video_converter(self, input_file):
     path, filename = split(input_file)
     orig_filename, file_ext = splitext(filename)
@@ -61,4 +88,5 @@ def video_converter(self, input_file):
     return {
         'percent': 100,
         'status': 'Completed',
+        'output_file': output_file
     }

@@ -3,5 +3,5 @@
 from app import create_app
 from config import DeploymentConfig
 
-application = create_app(DeploymentConfig, 'optimizer_video')
+application = create_app(DeploymentConfig, 'video-optimizer')
 

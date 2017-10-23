@@ -6,7 +6,8 @@ class DefaultConfig(object):
     CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'pyamqp://')
     CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost')
     URL_CACHE = False
-    MAX_CONTENT_LENGTH = 80 * 1024 * 1024  # 80MB
+    MAX_CONTENT_LENGTH = 80 * 1024 * 1024  # MB
+    WEB_HOOKS = []
 
 
 class DevelopmentConfig(DefaultConfig):

@@ -27,5 +27,6 @@ venv/
 media/
 
 # example videos
+small.mp4
 input.mp4
 input.mkv
