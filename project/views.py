@@ -2,15 +2,17 @@ import subprocess
 import uuid
 import os
 import hashlib
+from bson.errors import InvalidId
 
-import gridfs
-from flask import Blueprint, request, current_app, jsonify, send_file, url_for
+from bson.objectid import ObjectId
+from flask import Blueprint, request, current_app, jsonify, url_for, \
+    make_response
 from urllib.parse import urlparse
 from os.path import splitext, basename
-
-from flask_pymongo import MongoClient
+from gridfs import NoFile
 
 from exception import LargeFileException, FileSizeException
+from extensions import fs
 from tasks import video_converter
 
 mod = Blueprint('views', __name__)
@@ -98,10 +100,7 @@ def get_video():
          }), 202, {
                'X-Progress': url_for('views.task_status',
                                      task_id=task.task_id,
-                                     _external=True),
-               'X-Pull': url_for('views.download',
-                                 task_id=task.task_id,
-                                 _external=True)
+                                     _external=True)
            }
 
 
@@ -134,8 +133,15 @@ def task_status(task_id):
 
 @mod.route('/pull/<file_id>')
 def pull_file(file_id):
-    # TODO: send file for client
-    db = MongoClient().video_optimizer
-    fs = gridfs.GridFS(db)
-    file = fs.get(file_id)
-    return send_file(file)
+    try:
+        file = fs.get(ObjectId(file_id))
+    except (InvalidId, NoFile):
+        return jsonify({'error': 'File not found'}), 404
+
+    response = make_response(file.read())
+    response.mimetype = 'video/mp4'
+    response.headers['Content-Disposition'] = 'attachment'
+
+    fs.delete(ObjectId(file_id))
+
+    return response

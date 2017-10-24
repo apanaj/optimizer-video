@@ -2,9 +2,9 @@ import subprocess
 import re
 import gridfs
 import os
-from os.path import splitext, split, join
-from pymongo import MongoClient
 
+from os.path import splitext, split, join, dirname, basename
+from pymongo import MongoClient
 from celery import Task
 
 from extensions import celery_app
@@ -16,14 +16,14 @@ class CallbackTask(Task):
         fs = gridfs.GridFS(db)
 
         converted_filepath = retval['output_file']
-        file_id = fs.put(open(converted_filepath, 'rb'))
+        file_id = fs.put(open(converted_filepath, 'rb'),
+                         filename=task_id)
         print('FileID: {}'.format(file_id))
 
-        filepath = os.path.dirname(converted_filepath)
-        converted_filename = os.path.basename(converted_filepath)
-        origin_filepath = os.path.join(
-            filepath,
-            converted_filename.replace('convert-', ''))
+        filepath = dirname(converted_filepath)
+        converted_filename = basename(converted_filepath)
+        origin_filepath = join(filepath,
+                               converted_filename.replace('convert-', ''))
 
         os.remove(origin_filepath)
         os.remove(converted_filepath)
