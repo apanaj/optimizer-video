@@ -2,6 +2,7 @@ import subprocess
 import re
 import gridfs
 import os
+import requests
 
 from os.path import splitext, split, join, dirname, basename
 from pymongo import MongoClient
@@ -17,7 +18,7 @@ class CallbackTask(Task):
 
         converted_filepath = retval['output_file']
         file_id = fs.put(open(converted_filepath, 'rb'),
-                         filename=task_id)
+                         filename=task_id + '.mp4')
         print('FileID: {}'.format(file_id))
 
         filepath = dirname(converted_filepath)
@@ -28,12 +29,24 @@ class CallbackTask(Task):
         os.remove(origin_filepath)
         os.remove(converted_filepath)
 
+        doc = fs.get(file_id)._file
+        # TODO: send request to real webhook
+        requests.post('http://127.0.0.1:5001/webhook', json={
+            'key': str(doc['_id']),
+            'filename': doc['filename'],
+            'md5': doc['md5'],
+            'chunkSize': doc['chunkSize'],
+            'length': doc['length'],
+            'uploadDate': str(doc['uploadDate'])
+        })
+
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         pass
 
 
 @celery_app.task(base=CallbackTask, bind=True)
-def video_converter(self, input_file):
+def video_converter(self, input_file, client_ip):
+    # TODO: save client_ip to db
     path, filename = split(input_file)
     orig_filename, file_ext = splitext(filename)
     output_file = join(path, 'convert-' + orig_filename + '.mp4')
