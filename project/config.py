@@ -7,13 +7,17 @@ class DefaultConfig(object):
     CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost')
     URL_CACHE = False
     MAX_CONTENT_LENGTH = 80 * 1024 * 1024  # MB
+    RETRY_CALLBACK_REQUEST_COUNT = 5
 
 
 class DevelopmentConfig(DefaultConfig):
     DEBUG = True
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     MEDIA_FOLDER = os.path.join(BASE_DIR, 'media/')
-    WEB_HOOKS = ['127.0.0.1']
+    WEB_HOOKS = ['http://127.0.0.1:5001',
+                 'http://192.168.88.232:8000',
+                 'http://192.168.88.232',
+                 ]
 
 
 class DeploymentConfig(DefaultConfig):

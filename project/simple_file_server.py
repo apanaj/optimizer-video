@@ -13,10 +13,10 @@ def download_small_example():
     return send_file('small.mp4', as_attachment=True)
 
 
-@app.route("/webhook", methods=['POST'])
+@app.route("/", methods=['POST'])
 def webhook():
     print(request.json)
-    return '', 204
+    return '', 200
 
 
 if __name__ == '__main__':
