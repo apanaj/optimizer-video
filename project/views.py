@@ -78,8 +78,14 @@ def get_video():
     if request.method == 'POST':
         if 'file' not in request.files:
             return jsonify({'error': '`file` key not found in form data'}), 400
-
         filename = save_video_from_form(request.files['file'])
+
+        webhook = request.form.get('webhook')
+        if not webhook:
+            return jsonify({'error': '`webhook` parameter required'}), 400
+
+        if webhook not in current_app.config['WEB_HOOKS']:
+            return jsonify({'error': '`webhook` is not valid'}), 403
     else:
         url = request.args.get('url')
         webhook = request.args.get('webhook')
@@ -99,7 +105,8 @@ def get_video():
 
         filename = save_video_from_url(url)
 
-    task = video_converter.apply_async(args=[filename, request.remote_addr])
+    task = video_converter.apply_async(args=[
+        filename, request.remote_addr, webhook])
     return jsonify({'task_id': task.task_id}), 202, {
                'X-Progress': url_for('views.task_status',
                                      task_id=task.task_id,
