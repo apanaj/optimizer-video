@@ -18,7 +18,10 @@ class CallbackTask(Task):
 
         converted_filepath = retval['output_file']
         file_id = fs.put(open(converted_filepath, 'rb'),
-                         filename=task_id + '.mp4')
+                         filename=task_id + '.mp4',
+                         clientIP=retval['client_ip'],
+                         webhook=retval['webhook']
+                         )
         print('FileID: {}'.format(file_id))
 
         filepath = dirname(converted_filepath)
@@ -45,7 +48,7 @@ class CallbackTask(Task):
 
 
 @celery_app.task(base=CallbackTask, bind=True)
-def video_converter(self, input_file, client_ip):
+def video_converter(self, input_file, client_ip, webhook):
     # TODO: save client_ip to db
     path, filename = split(input_file)
     orig_filename, file_ext = splitext(filename)
@@ -101,5 +104,7 @@ def video_converter(self, input_file, client_ip):
     return {
         'percent': 100,
         'status': 'Completed',
-        'output_file': output_file
+        'output_file': output_file,
+        'client_ip': client_ip,
+        'webhook': webhook
     }
