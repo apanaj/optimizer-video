@@ -20,7 +20,7 @@ celery -A tasks worker --loglevel=info
 ### Upload Video. `get` and `post` method
 get:
 ```
-<server_url>/upload?url=http://example.com/input.mpg&webhook=127.0.0.1
+<server_url>/upload?url=http://example.com/input.mpg&webhook=http://127.0.0.1
 ```
 
 post:
@@ -34,36 +34,38 @@ form parameter key: `file`
 response:
 ```json
 {
-    "task_id": "32673e20-efab-42ee-99f4-855949d80051"
+    "result": {
+        "_link": {
+            "progress": "http://127.0.0.1:5000/status/3573f19f-84b1-4a3b-bda2-300ecb96e6ed"
+        },
+        "task_id": "3573f19f-84b1-4a3b-bda2-300ecb96e6ed"
+    },
+    "status": "ACCEPTED"
 }
 ```
 
-### Check Task Status. `get` method
+### Check Task Status. `HEAD` method
 ```
 <server_url>/status/<task_id>
 ```
 
 example pending response:
-```json
-{
-    "percent": "38",
-    "state": "PROGRESS",
-    "status": "In Progress"
-}
+```
+X-Percent → 38
+X-State → In Progress
+X-Status → PROGRESS
 ```
 
 complete response
-```json
-{
-    "percent": 100,
-    "state": "SUCCESS",
-    "status": "Completed"
-}
+```
+X-Percent → 100
+X-State → SUCCESS
+X-Status → Completed
 ```
 
 ### pull video file. `get` method
 ```
-<server_url>/pull/<file_key>
+<server_url>/pull/<task_id>?key=<key>
 ```
 
 ### Create expiration mongo index

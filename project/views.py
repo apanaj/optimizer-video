@@ -9,7 +9,6 @@ from flask import Blueprint, request, current_app, jsonify, url_for, \
     make_response
 from urllib.parse import urlparse
 from os.path import splitext, basename
-from gridfs import NoFile
 
 from exception import LargeFileException, FileSizeException
 from extensions import fs
@@ -107,51 +106,61 @@ def get_video():
 
     task = video_converter.apply_async(args=[
         filename, request.remote_addr, webhook])
-    return jsonify({'task_id': task.task_id}), 202, {
-               'X-Progress': url_for('views.task_status',
-                                     task_id=task.task_id,
-                                     _external=True)
-           }
+    return jsonify(
+        {
+            'status': 'ACCEPTED',
+            'result': {
+                'task_id': task.task_id,
+                '_link': {
+                    'progress': url_for('views.task_status',
+                                        task_id=task.task_id,
+                                        _external=True),
+                }
+            }
+        }), 202
 
 
-@mod.route('/status/<task_id>')
+@mod.route('/status/<task_id>', methods=['HEAD'])
 def task_status(task_id):
     task = video_converter.AsyncResult(task_id)
     if task.state == 'PENDING':
         response = {
-            'state': task.state,
-            'percent': 0,
-            'status': 'Pending...'
+            'X-State': task.state,
+            'X-Percent': 0,
+            'X-Status': 'Pending...'
         }
     elif task.state != 'FAILURE':
         response = {
-            'state': task.state,
-            'percent': task.info.get('percent', 0),
-            'status': task.info.get('status', '')
+            'X-State': task.state,
+            'X-Percent': task.info.get('percent', 0),
+            'X-Status': task.info.get('status', '')
         }
         if 'result' in task.info:
-            response['result'] = task.info['result']
+            response['X-Result'] = task.info['result']
     else:
         # something went wrong in the background job
         response = {
-            'state': task.state,
-            'percent': 1,
-            'status': str(task.info),  # this is the exception raised
+            'X-State': task.state,
+            'X-Percent': 1,
+            'X-Status': str(task.info),  # this is the exception raised
         }
-    return jsonify(response)
+    return '', 204, response
 
 
-@mod.route('/pull/<file_id>')
-def pull_file(file_id):
-    try:
-        file = fs.get(ObjectId(file_id))
-    except (InvalidId, NoFile):
+@mod.route('/pull/<task_id>')
+def pull_file(task_id):
+    import requests
+    r = requests.get('http://google.com')
+    key = request.args.get('key')
+    if not key:
+        return jsonify({'error': '`key` argument is requirement'}), 400
+
+    file = fs.find_one({'task_id': task_id, 'key': key})
+    if file is None:
         return jsonify({'error': 'File not found'}), 404
 
     response = make_response(file.read())
     response.mimetype = 'video/mp4'
     response.headers['Content-Disposition'] = 'attachment'
-
-    fs.delete(ObjectId(file_id))
 
     return response
