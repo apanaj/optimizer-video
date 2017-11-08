@@ -16,11 +16,19 @@ This micro service is a asynchronous video converter.
 celery -A tasks worker --loglevel=info
 ```
 
+## Watermark position options:
+```
+tl → Top Left
+tr → Top Right
+bl → Bottom Left
+br → Bottom Right
+```
+
 ## End Points
 ### Upload Video. `get` and `post` method
 get:
 ```
-<server_url>/upload?url=http://example.com/input.mpg&webhook=http://127.0.0.1
+<server_url>/upload?url=http://example.com/input.mpg&webhook=http://127.0.0.1&watermark=bl
 ```
 
 post:

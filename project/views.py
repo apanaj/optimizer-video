@@ -75,6 +75,9 @@ def save_video_from_form(file):
 @mod.route('/upload', methods=['GET', 'POST'])
 def get_video():
     if request.method == 'POST':
+        # ----------------------------------
+        # ---------- POST METHOD -----------
+        # ----------------------------------
         if 'file' not in request.files:
             return jsonify({'error': '`file` key not found in form data'}), 400
         filename = save_video_from_form(request.files['file'])
@@ -82,20 +85,29 @@ def get_video():
         webhook = request.form.get('webhook')
         if not webhook:
             return jsonify({'error': '`webhook` parameter required'}), 400
-
         if webhook not in current_app.config['WEB_HOOKS']:
             return jsonify({'error': '`webhook` is not valid'}), 403
+
+        watermark = request.form.get('watermark')
+        if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
+            return jsonify({'error': '`watermark` is not valid'}), 403
     else:
+        # ----------------------------------
+        # ----------- GET METHOD -----------
+        # ----------------------------------
         url = request.args.get('url')
-        webhook = request.args.get('webhook')
         if not url:
             return jsonify({'error': '`url` parameter required'}), 400
 
+        webhook = request.args.get('webhook')
         if not webhook:
             return jsonify({'error': '`webhook` parameter required'}), 400
-
         if webhook not in current_app.config['WEB_HOOKS']:
             return jsonify({'error': '`webhook` is not valid'}), 403
+
+        watermark = request.args.get('watermark')
+        if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
+            return jsonify({'error': '`watermark` is not valid'}), 403
 
         disassembled = urlparse(url)
         orig_filename, file_ext = splitext(basename(disassembled.path))
@@ -105,7 +117,7 @@ def get_video():
         filename = save_video_from_url(url)
 
     task = video_converter.apply_async(args=[
-        filename, request.remote_addr, webhook])
+        filename, watermark, request.remote_addr, webhook])
     return jsonify(
         {
             'status': 'ACCEPTED',

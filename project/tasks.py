@@ -106,13 +106,25 @@ class CallbackTask(Task):
 
 
 @celery_app.task(base=CallbackTask, bind=True)
-def video_converter(self, input_file, client_ip, webhook):
+def video_converter(self, input_file, watermark, client_ip, webhook):
     path, filename = split(input_file)
     orig_filename, file_ext = splitext(filename)
     output_file = join(path, 'convert-' + orig_filename + '.mp4')
     screenshot_file = join(path, orig_filename + '.jpg')
 
-    options = '-vcodec h264 -acodec aac -strict -2'
+    pixel_padding = DefaultConfig.WATERMARK_PADDING
+    overlay_dict = {
+        'tl': '"overlay={}:{}"'.format(pixel_padding, pixel_padding),
+        'tr': '"overlay=W-w-{}:{}"'.format(pixel_padding, pixel_padding),
+        'bl': '"overlay={}:H-h-{}"'.format(pixel_padding, pixel_padding),
+        'br': '"overlay=W-w-{}:H-h-{}"'.format(pixel_padding, pixel_padding)
+    }
+    overlay = overlay_dict.get(watermark)
+    overlay_option = ''
+    if overlay:
+        overlay_option = '-i logo.png -filter_complex {} '.format(overlay)
+
+    options = overlay_option + '-vcodec h264 -acodec aac -strict -2'
     cmd_convert = 'ffmpeg -y -i {input_file} {options} {output_file}'.format(
         input_file=input_file, options=options, output_file=output_file)
     print(cmd_convert)
@@ -160,7 +172,8 @@ def video_converter(self, input_file, client_ip, webhook):
                                   meta={'percent': percent,
                                         'status': 'In Progress'})
 
-    position = '00:00:' + str(random.randint(1, seconds))
+    max_second = 59 if minutes >= 1 else seconds
+    position = '00:00:' + str(random.randint(1, max_second))
     cmd_screenshot = 'ffmpeg -ss {position} -i {input_file} -vframes 1 -q:v 2 {screenshot_file}'.format(
         position=position, input_file=output_file, screenshot_file=screenshot_file)
     print(cmd_screenshot)
