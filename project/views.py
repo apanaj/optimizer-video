@@ -149,18 +149,28 @@ def task_status(task_id):
 
 @mod.route('/pull/<task_id>')
 def pull_file(task_id):
-    import requests
-    r = requests.get('http://google.com')
     key = request.args.get('key')
     if not key:
         return jsonify({'error': '`key` argument is requirement'}), 400
 
-    file = fs.find_one({'task_id': task_id, 'key': key})
+    file_type = request.args.get('type')
+    if not file_type:
+        return jsonify({'error': '`type` argument is requirement'}), 400
+
+    file_type = file_type.lower()
+    if file_type not in ['video', 'screenshot']:
+        return jsonify({'error': '`type` is not valid'}), 400
+
+    file = fs.find_one({'task_id': task_id, 'key': key, 'type': file_type})
     if file is None:
         return jsonify({'error': 'File not found'}), 404
 
     response = make_response(file.read())
-    response.mimetype = 'video/mp4'
+    mimtype_dict = {
+        'video': 'video/mp4',
+        'screenshot': 'image/jpeg'
+    }
+    response.mimetype = mimtype_dict[file_type]
     response.headers['Content-Disposition'] = 'attachment'
 
     return response

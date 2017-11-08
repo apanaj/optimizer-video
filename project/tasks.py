@@ -21,7 +21,8 @@ class CallbackTask(Task):
         db = MongoClient().video_optimizer
         fs = gridfs.GridFS(db)
 
-        converted_filepath = retval['output_file']
+        converted_filepath = retval['video_file']
+        screenshot_filepath = retval['screenshot_file']
         client_ip = retval['client_ip']
         webhook = retval['webhook']
 
@@ -30,14 +31,26 @@ class CallbackTask(Task):
             string.digits +
             string.ascii_lowercase) for _ in range(32))
 
-        file_id = fs.put(open(converted_filepath, 'rb'),
-                         key=key,
-                         task_id=task_id,
-                         filename=task_id + '.mp4',
-                         clientIP=client_ip,
-                         webhook=webhook,
-                         )
-        print('FileID: {}'.format(file_id))
+        video_file_id = fs.put(
+            open(converted_filepath, 'rb'),
+            key=key,
+            task_id=task_id,
+            filename=task_id + '.mp4',
+            type='video',
+            clientIP=client_ip,
+            webhook=webhook,
+        )
+        print('VideoFileID: {}'.format(video_file_id))
+        print('Key: {}'.format(key))
+
+        screenshot_file_id = fs.put(
+            open(screenshot_filepath, 'rb'),
+            key=key,
+            task_id=task_id,
+            filename=task_id + '.jpg',
+            type='screenshot',
+        )
+        print('ScreenshotFileID: {}'.format(screenshot_file_id))
         print('Key: {}'.format(key))
 
         filepath = dirname(converted_filepath)
@@ -47,8 +60,9 @@ class CallbackTask(Task):
 
         os.remove(origin_filepath)
         os.remove(converted_filepath)
+        os.remove(screenshot_filepath)
 
-        doc = fs.get(file_id)._file
+        doc = fs.get(video_file_id)._file
 
         def send_callback_request():
             response = requests.post(webhook, json={
@@ -61,7 +75,10 @@ class CallbackTask(Task):
                     'date_upload': str(doc['uploadDate']),
                 },
                 '_link': {
-                    'pull': '/pull/' + task_id + '?key=' + doc['key']
+                    'video': '/pull/{}?key={}&type={}'.format(
+                        task_id, doc['key'], 'video'),
+                    'screenshot': '/pull/{}?key={}&type={}'.format(
+                        task_id, doc['key'], 'screenshot'),
                 }
             })
             print(response.status_code)
@@ -71,18 +88,18 @@ class CallbackTask(Task):
             try:
                 reason = send_callback_request()
                 db.fs.files.update_one(
-                    {'_id': file_id},
+                    {'_id': video_file_id},
                     {'$set': {'callback_response': reason}})
                 if reason == 'OK':
                     break
             except requests.exceptions.ConnectionError:
                 db.fs.files.update_one(
-                    {'_id': file_id},
+                    {'_id': video_file_id},
                     {'$set': {'callback_response': 'ConnectionError'}})
-                print('ConnectionError- FileID: {}'.format(file_id))
+                print('ConnectionError- FileID: {}'.format(video_file_id))
             time.sleep(3)
 
-        print('/pull/' + task_id + '?key=' + doc['key'])
+        print('/pull/{}?key={}&type={}'.format(task_id, doc['key'], 'screenshot'))
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         pass
@@ -93,6 +110,7 @@ def video_converter(self, input_file, client_ip, webhook):
     path, filename = split(input_file)
     orig_filename, file_ext = splitext(filename)
     output_file = join(path, 'convert-' + orig_filename + '.mp4')
+    screenshot_file = join(path, orig_filename + '.jpg')
 
     options = '-vcodec h264 -acodec aac -strict -2'
     cmd_convert = 'ffmpeg -y -i {input_file} {options} {output_file}'.format(
@@ -141,10 +159,23 @@ def video_converter(self, input_file, client_ip, webhook):
                 self.update_state(state='PROGRESS',
                                   meta={'percent': percent,
                                         'status': 'In Progress'})
+
+    position = '00:00:' + str(random.randint(1, seconds))
+    cmd_screenshot = 'ffmpeg -ss {position} -i {input_file} -vframes 1 -q:v 2 {screenshot_file}'.format(
+        position=position, input_file=output_file, screenshot_file=screenshot_file)
+    print(cmd_screenshot)
+    process = subprocess.Popen(cmd_screenshot,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               # universal_newlines=True,
+                               shell=True)
+    process.communicate()
+
     return {
         'percent': 100,
         'status': 'Completed',
-        'output_file': output_file,
+        'video_file': output_file,
+        'screenshot_file': screenshot_file,
         'client_ip': client_ip,
         'webhook': webhook
     }
