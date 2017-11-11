@@ -8,6 +8,7 @@ import gridfs
 import os
 import requests
 
+from PIL import Image, ImageStat
 from os.path import splitext, split, join, dirname, basename
 from pymongo import MongoClient
 from celery import Task
@@ -108,6 +109,27 @@ class CallbackTask(Task):
         pass
 
 
+def take_screenshot(minutes, seconds, input_file, screenshot_file):
+    max_second = 59 if minutes >= 1 else seconds
+    position = '00:00:' + str(random.randint(1, max_second))
+    cmd_screenshot = 'ffmpeg -y -ss {position} -i {input_file} -vframes 1 -q:v 2 {screenshot_file}'.format(
+        position=position, input_file=input_file, screenshot_file=screenshot_file)
+    print(cmd_screenshot)
+    process = subprocess.Popen(cmd_screenshot,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               shell=True)
+    process.communicate()
+
+
+def is_good_screenshot(image_path):
+    im = Image.open(image_path).convert('L')
+    stat = ImageStat.Stat(im)
+    min_value, max_value = stat.extrema[0]
+
+    return False if max_value - min_value < 50 else True
+
+
 @celery_app.task(base=CallbackTask, bind=True)
 def video_converter(self, input_file, watermark, client_ip, webhook):
     path, filename = split(input_file)
@@ -175,16 +197,11 @@ def video_converter(self, input_file, watermark, client_ip, webhook):
                                   meta={'percent': percent,
                                         'status': 'In Progress'})
 
-    max_second = 59 if minutes >= 1 else seconds
-    position = '00:00:' + str(random.randint(1, max_second))
-    cmd_screenshot = 'ffmpeg -ss {position} -i {input_file} -vframes 1 -q:v 2 {screenshot_file}'.format(
-        position=position, input_file=output_file, screenshot_file=screenshot_file)
-    print(cmd_screenshot)
-    process = subprocess.Popen(cmd_screenshot,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT,
-                               shell=True)
-    process.communicate()
+    take_screenshot(minutes, seconds, output_file, screenshot_file)
+    for i in range(3):
+        if is_good_screenshot(screenshot_file):
+            break
+        take_screenshot(minutes, seconds, output_file, screenshot_file)
 
     return {
         'percent': 100,
