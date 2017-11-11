@@ -22,6 +22,7 @@ class CallbackTask(Task):
         fs = gridfs.GridFS(db)
 
         converted_filepath = retval['video_file']
+        seconds = retval['seconds']
         screenshot_filepath = retval['screenshot_file']
         client_ip = retval['client_ip']
         webhook = retval['webhook']
@@ -37,6 +38,7 @@ class CallbackTask(Task):
             task_id=task_id,
             filename=task_id + '.mp4',
             type='video',
+            seconds=seconds,
             clientIP=client_ip,
             webhook=webhook,
         )
@@ -72,6 +74,7 @@ class CallbackTask(Task):
                 'file': {
                     'md5': doc['md5'],
                     'size': doc['length'],
+                    'seconds': doc['seconds'],
                     'date_upload': str(doc['uploadDate']),
                 },
                 '_link': {
@@ -180,15 +183,18 @@ def video_converter(self, input_file, watermark, client_ip, webhook):
     process = subprocess.Popen(cmd_screenshot,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
-                               # universal_newlines=True,
                                shell=True)
     process.communicate()
 
     return {
         'percent': 100,
         'status': 'Completed',
+
         'video_file': output_file,
+        'seconds': hours * 3600 + minutes * 60 + seconds,
+
         'screenshot_file': screenshot_file,
+
         'client_ip': client_ip,
         'webhook': webhook
     }
