@@ -101,7 +101,7 @@ class CallbackTask(Task):
                     {'_id': video_file_id},
                     {'$set': {'callback_response': 'ConnectionError'}})
                 print('ConnectionError- FileID: {}'.format(video_file_id))
-            time.sleep(3)
+            time.sleep(2 ** (i+2))
 
         print('/pull/{}?key={}&type={}'.format(task_id, doc['key'], 'screenshot'))
 
