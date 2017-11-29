@@ -71,9 +71,28 @@ X-State → SUCCESS
 X-Status → Completed
 ```
 
-### pull video file. `get` method
+### Example response to webhook
+```json
+{
+  "task_id": "9521f1f5-b807-45a5-913e-b6776f97e323",
+  "key": "5a1ec261c09e5f100e6ba81e",
+  "timestamp_now": 1511965281,
+  "file": {
+    "md5": "4f59ce29a025d5e7b802e74fb47ab838",
+    "size": 1151052,
+    "seconds": 5,
+    "date_upload": "2017-11-29 14:21:21.967000"
+  },
+  "_link": {
+    "video": "/pull/9521f1f5-b807-45a5-913e-b6776f97e323?key=3QgN7ehujKOHpsY0VthcpfqZjQDdcpxg&type=video",
+    "screenshot": "/pull/9521f1f5-b807-45a5-913e-b6776f97e323?key=3QgN7ehujKOHpsY0VthcpfqZjQDdcpxg&type=screenshot"
+  }
+}
 ```
-<server_url>/pull/<task_id>?key=<key>
+
+### pull video and screenshot file. `get` method
+```
+<server_url>/pull/<task_id>?key=<key>&type=<video|screenshot>
 ```
 
 ### Create expiration mongo index
