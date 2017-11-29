@@ -1,16 +1,53 @@
 version: '2'
 
+volumes:
+  vol-mongodb:
+    #### - /data/db
+  vol-mongodb-log:
+    #### - /var/log/mongodb/
+  vol-optimizer-data:
+    #### - /data/vids/
+  vol-share:
+
 services:
 
-  apanaj_optimizer_video:
+  apanaj_optimizer-video:
     build:
       context: ./
       dockerfile: Dockerfile
-    image: apanaj_optimizer_video
+    image: apanaj_optimizer-video
     expose:
       - "80"
     environment:
       - SECRET_KEY=zx8^qa7j[5go[o0?&/kTu88
-      - CELERY_BROKER_URL=pyamqp://
-      - CELERY_RESULT_BACKEND=redis://localhost
-      - MEDIA_FOLDER=/tmp/
+      - CELERY_BROKER_URL=pyamqp://opt-rabbitmq
+      - CELERY_RESULT_BACKEND=redis://opt-redis
+      - MEDIA_FOLDER=/data/vids/
+    volumes:
+     - vol-optimizer-data:/data/vids/
+     - vol-share:/v-share/
+
+
+  opt-storage-mongo:
+    image: mongo:3.4.0
+    expose:
+     - "27017"
+    volumes:
+     - vol-mongodb:/data/db/
+     - vol-mongodb-log:/var/log/mongodb/
+     - vol-share:/v-share/
+
+  opt-redis:
+    image: redis:4.0.2-alpine
+    expose:
+     - "6379"
+    volumes:
+     - vol-share:/v-share/
+
+  opt-rabbitmq:
+    image: rabbitmq:3.6.14-alpine
+    expose:
+     - "5672"
+    volumes:
+     - vol-share:/v-share/
+

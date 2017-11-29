@@ -77,6 +77,6 @@ X-Status → Completed
 ```
 
 ### Create expiration mongo index
-```json
+```javascript
 db.fs.files.createIndex( { "uploadDate": 1 }, { expireAfterSeconds: 3600 * 2 } )
 ```

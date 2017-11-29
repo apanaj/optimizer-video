@@ -147,7 +147,7 @@ def video_converter(self, input_file, watermark, client_ip, webhook):
     overlay = overlay_dict.get(watermark)
     overlay_option = ''
     if overlay:
-        overlay_option = '-i logo.png -filter_complex {} '.format(overlay)
+        overlay_option = '-i watermark.png -filter_complex {} '.format(overlay)
 
     options = overlay_option + '-vcodec h264 -acodec aac -strict -2'
     cmd_convert = 'ffmpeg -y -i {input_file} {options} {output_file}'.format(

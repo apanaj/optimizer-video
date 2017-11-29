@@ -2,14 +2,7 @@ version: '2'
 
 services:
 
-  apanaj_optimizer_video:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: apanaj_optimizer_video
-      expose:
-      ## On Private Network
-        - "80"
+  apanaj_optimizer-video:
     networks:
       - video-network
       - network-front-proxy

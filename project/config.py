@@ -11,6 +11,16 @@ class DefaultConfig(object):
     WATERMARK_PADDING = 50
 
 
+class DeploymentConfig(DefaultConfig):
+    DEBUG = False
+    MEDIA_FOLDER = os.environ.get('MEDIA_FOLDER')
+    WEB_HOOKS = [
+        # 'http://allowed-web-hook/',
+        'http://admin@123456:api.apanajapp.com/v2/upgrade/',
+        'http://192.168.88.248:5001',
+    ]
+
+
 class DevelopmentConfig(DefaultConfig):
     DEBUG = True
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +31,4 @@ class DevelopmentConfig(DefaultConfig):
                  ]
 
 
-class DeploymentConfig(DefaultConfig):
-    DEBUG = False
-    MEDIA_FOLDER = os.environ.get('MEDIA_FOLDER')
-    WEB_HOOKS = []
+

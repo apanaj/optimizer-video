@@ -1,0 +1,7 @@
+version: '2'
+
+services:
+
+  apanaj_optimizer-video:
+    ports:
+      - "9090:80"
