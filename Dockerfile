@@ -1,7 +1,8 @@
 FROM python:3.6
 
 RUN apt-get update \
-	&& apt-get install -yq --fix-missing ca-certificates nginx gettext-base supervisor python-dev
+	&& apt-get install -yq --fix-missing ca-certificates nginx gettext-base supervisor \
+	&& python3-dev python3-setuptools
 
 RUN pip install uwsgi
 
