@@ -2,15 +2,15 @@ import subprocess
 import uuid
 import os
 import hashlib
-from bson.errors import InvalidId
 
-from bson.objectid import ObjectId
 from flask import Blueprint, request, current_app, jsonify, url_for, \
     make_response
 from urllib.parse import urlparse
 from os.path import splitext, basename
+from furl import furl
 
-from exception import LargeFileException, FileSizeException
+from exception import LargeFileException, FileSizeException, \
+    WebhookRequiredException, WebhookNotValidException
 from extensions import fs
 from tasks import video_converter
 
@@ -72,6 +72,18 @@ def save_video_from_form(file):
     return source_filepath
 
 
+def get_webhook(webhook_encode):
+    if not webhook_encode:
+        raise WebhookRequiredException
+
+    webhook = furl(webhook_encode)
+    webhook_path = webhook.origin + webhook.pathstr
+    if webhook_path not in current_app.config['WEB_HOOKS']:
+        raise WebhookNotValidException
+
+    return webhook
+
+
 @mod.route('/upload', methods=['GET', 'POST'])
 def get_video():
     if request.method == 'POST':
@@ -82,32 +94,24 @@ def get_video():
             return jsonify({'error': '`file` key not found in form data'}), 400
         filename = save_video_from_form(request.files['file'])
 
-        webhook = request.form.get('webhook')
-        if not webhook:
-            return jsonify({'error': '`webhook` parameter required'}), 400
-        if webhook not in current_app.config['WEB_HOOKS']:
-            return jsonify({'error': '`webhook` is not valid'}), 403
+        webhook = get_webhook(request.form.get('webhook'))
 
         watermark = request.form.get('watermark')
         if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
-            return jsonify({'error': '`watermark` is not valid'}), 403
+            return jsonify({'error': '`watermark` is not valid'}), 400
     else:
         # ----------------------------------
         # ----------- GET METHOD -----------
         # ----------------------------------
-        url = request.args.get('url')
+        url = furl(request.args.get('url')).url
         if not url:
             return jsonify({'error': '`url` parameter required'}), 400
 
-        webhook = request.args.get('webhook')
-        if not webhook:
-            return jsonify({'error': '`webhook` parameter required'}), 400
-        if webhook not in current_app.config['WEB_HOOKS']:
-            return jsonify({'error': '`webhook` is not valid'}), 403
+        webhook = get_webhook(request.args.get('webhook'))
 
         watermark = request.args.get('watermark')
         if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
-            return jsonify({'error': '`watermark` is not valid'}), 403
+            return jsonify({'error': '`watermark` is not valid'}), 400
 
         disassembled = urlparse(url)
         orig_filename, file_ext = splitext(basename(disassembled.path))
@@ -117,7 +121,7 @@ def get_video():
         filename = save_video_from_url(url)
 
     task = video_converter.apply_async(args=[
-        filename, watermark, request.remote_addr, webhook])
+        filename, watermark, request.remote_addr, webhook.url])
     return jsonify(
         {
             'status': 'ACCEPTED',

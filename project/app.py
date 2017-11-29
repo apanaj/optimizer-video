@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 
-from exception import LargeFileException, FileSizeException
+from exception import LargeFileException, FileSizeException, \
+    WebhookRequiredException, WebhookNotValidException
 from extensions import celery_app
 from views import mod
 
@@ -18,6 +19,14 @@ def create_app(config, app_name):
     @app.errorhandler(LargeFileException)
     def large_file_exception(error):
         return jsonify(error='File is too large'), 413
+
+    @app.errorhandler(WebhookRequiredException)
+    def webhook_required_exception(error):
+        return jsonify({'error': '`webhook` parameter required'}), 400
+
+    @app.errorhandler(WebhookNotValidException)
+    def webhook_not_valid_exception(error):
+        return jsonify({'error': '`webhook` is not valid'}), 403
 
     return app
 

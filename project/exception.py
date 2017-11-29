@@ -4,3 +4,11 @@ class LargeFileException(Exception):
 
 class FileSizeException(Exception):
     pass
+
+
+class WebhookRequiredException(Exception):
+    pass
+
+
+class WebhookNotValidException(Exception):
+    pass

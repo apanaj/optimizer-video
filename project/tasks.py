@@ -168,6 +168,7 @@ def video_converter(self, input_file, watermark, client_ip, webhook):
     frames = None
 
     for line in process.stdout:
+        print(line)
         if not duration_match:
             pattern = 'Duration:\s+(\d{2}):(\d{2}):([-+]?[0-9]*\.?[0-9]+.), start:'
             # pattern = 'Duration:\s+(\d{2}):(\d{2}):(\d{2}), start:'
