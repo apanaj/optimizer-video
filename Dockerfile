@@ -133,6 +133,11 @@ PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./conf
 PATH="$HOME/bin:$PATH" make && \
 make install
 
+# symlink to ffmpeg binary
+RUN cd /usr/bin && \
+ln -s ~/bin/ffmpeg ffmpeg && \
+source ~/.profile
+
 
 ## #################
 ##      Nginx
