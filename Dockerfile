@@ -67,13 +67,15 @@ make install
 
 COPY ./docker/x265.tar.gz /
 
-RUN cd / && tar -xvzf x265.tar.gz -C ~/ffmpeg_sources/x265 \
-    && rm /x265.tar.gz
+RUN cd / && tar -xvzf x265.tar.gz -C ~/ffmpeg_sources/ \
+    && rm /x265.tar.gz \
+    && ls ~/ffmpeg_sources/
 
 # libx265 (!)
 RUN cd ~/ffmpeg_sources && \
-if cd x265 2> /dev/null; then hg pull && hg update; else hg clone https://bitbucket.org/multicoreware/x265; fi && \
-cd ~/ffmpeg_sources/x265/build/linux && \
+#if cd x265 2> /dev/null; then hg pull && hg update; else hg clone https://bitbucket.org/multicoreware/x265; fi && \
+if cd x265_v2.6 2> /dev/null; then echo "skip" else hg clone https://bitbucket.org/multicoreware/x265; fi && \
+cd ~/ffmpeg_sources/x265_v2.6/build/linux && \
 PATH="$HOME/bin:$PATH" /opt/cmake/bin/cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DENABLE_SHARED:bool=off ../../source && \
 PATH="$HOME/bin:$PATH" make && \
 make install
