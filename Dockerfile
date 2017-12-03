@@ -142,9 +142,7 @@ make install
 
 # symlink to ffmpeg binary
 RUN cd /usr/bin && \
-ln -s ~/bin/ffmpeg ffmpeg && \
-source ~/.profile
-
+ln -s ~/bin/ffmpeg ffmpeg
 
 ## #################
 ##      Nginx
@@ -177,6 +175,8 @@ COPY  ./project/ /project/
 WORKDIR /project
 
 RUN pip install --no-cache-dir -r requirements.txt
+
+RUN ln -s /tmp/logs /stdout
 
 EXPOSE 80 443
 CMD ["/usr/bin/supervisord"]

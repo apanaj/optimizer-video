@@ -20,6 +20,8 @@ services:
       - "80"
     environment:
       - SECRET_KEY=zx8^qa7j[5go[o0?&/kTu88
+      - MONGO_HOST=opt-storage-mongo
+      - MONGO_PORT=27017
       - CELERY_BROKER_URL=pyamqp://opt-rabbitmq
       - CELERY_RESULT_BACKEND=redis://opt-redis
       - MEDIA_FOLDER=/data/vids/

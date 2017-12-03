@@ -3,9 +3,23 @@ version: '2'
 services:
 
   apanaj_optimizer-video:
+    ports:
+      - "8700:80"
     networks:
       - video-network
       - network-front-proxy
+
+  opt-storage-mongo:
+    networks:
+      - video-network
+
+  opt-redis:
+    networks:
+      - video-network
+
+  opt-rabbitmq:
+    networks:
+      - video-network
 
 networks:
   video-network:
