@@ -24,6 +24,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://opt-redis
       - MEDIA_FOLDER=/data/vids/
     volumes:
+     - ./project/:/project
      - vol-optimizer-data:/data/vids/
      - vol-share:/v-share/
 

@@ -65,6 +65,11 @@ cd cmake-3.10.0 && \
 make && \
 make install
 
+COPY ./docker/x265.tar.gz /
+
+RUN cd / && tar -xvzf x265.tar.gz -C ~/ffmpeg_sources/x265 \
+    && rm /x265.tar.gz
+
 # libx265 (!)
 RUN cd ~/ffmpeg_sources && \
 if cd x265 2> /dev/null; then hg pull && hg update; else hg clone https://bitbucket.org/multicoreware/x265; fi && \
