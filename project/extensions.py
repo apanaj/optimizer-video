@@ -4,7 +4,10 @@ import gridfs
 
 from config import DefaultConfig
 
-db = MongoClient().video_optimizer
+db = MongoClient(
+    host=DefaultConfig.MONGO_HOST,
+    port=DefaultConfig.MONGO_PORT
+).video_optimizer
 fs = gridfs.GridFS(db)
 
 celery_app = Celery('tasks',

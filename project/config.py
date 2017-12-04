@@ -7,6 +7,7 @@ class DefaultConfig(object):
     MONGO_PORT = int(os.environ.get('MONGO_PORT', 27017))
     CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'pyamqp://')
     CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost')
+    SERVER_HOST = os.environ.get('SERVER_HOST', '127.0.0.1')
     URL_CACHE = False
     MAX_CONTENT_LENGTH = 80 * 1024 * 1024  # MB
     RETRY_CALLBACK_REQUEST_COUNT = 5
@@ -20,6 +21,7 @@ class DeploymentConfig(DefaultConfig):
         # 'http://allowed-web-hook/',
         'http://api.apanajapp.com/v2/upgrade',
         'http://192.168.88.248:5001',
+        'http://127.0.0.1:5001',
     ]
 
 
