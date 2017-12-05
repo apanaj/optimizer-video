@@ -17,6 +17,7 @@ class DefaultConfig(object):
 class DeploymentConfig(DefaultConfig):
     DEBUG = False
     MEDIA_FOLDER = os.environ.get('MEDIA_FOLDER')
+    SERVER_HOST = os.environ.get('SERVER_HOST', 'apanaj_optimizer-video')
     WEB_HOOKS = [
         # 'http://allowed-web-hook/',
         'http://api.apanajapp.com/v2/upgrade',
