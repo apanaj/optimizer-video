@@ -21,9 +21,9 @@ class DeploymentConfig(DefaultConfig):
     SERVER_HOST = os.environ.get('SERVER_HOST', 'apanaj_optimizer-video')
     WEB_HOOKS = [
         # 'http://allowed-web-hook/',
-        'http://api.apanajapp.com/v2/upgrade',
-        'http://192.168.88.248:5001',
-        'http://127.0.0.1:5001',
+#        'http://api.apanajapp.com/v2/upgrade',
+#        'http://192.168.88.248:5001',
+        'http://apanaj_web-server/posts/video'
     ]
 
 
@@ -32,6 +32,6 @@ class DevelopmentConfig(DefaultConfig):
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     MEDIA_FOLDER = os.path.join(BASE_DIR, 'media/')
     WEB_HOOKS = [
-        'http://127.0.0.1:5001',
-        'http://apanaj_web-server/path/to/callback'
+#        'http://127.0.0.1:5001',
+#        'http://apanaj_web-server/'
     ]
