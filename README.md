@@ -71,22 +71,33 @@ X-State → SUCCESS
 X-Status → Completed
 ```
 
-### Example response to webhook
+### Example SUCCESS response to webhook
 ```json
 {
-  "task_id": "9521f1f5-b807-45a5-913e-b6776f97e323",
-  "key": "5a1ec261c09e5f100e6ba81e",
-  "timestamp_now": 1511965281,
+  "task_id": "cbbb2683-4de4-4cd3-a20a-c911a8ebb292",
+  "status": "OK",
+  "key": "5a255f04c09e5f54e3384da5",
+  "timestamp_now": 1512398596,
   "file": {
-    "md5": "4f59ce29a025d5e7b802e74fb47ab838",
-    "size": 1151052,
+    "md5": "c60913975d5a7bab4c71395759ac2825",
+    "size": 1134077,
     "seconds": 5,
-    "date_upload": "2017-11-29 14:21:21.967000"
+    "date_upload": "2017-12-04 14:43:16.299000"
   },
   "_link": {
-    "video": "/pull/9521f1f5-b807-45a5-913e-b6776f97e323?key=3QgN7ehujKOHpsY0VthcpfqZjQDdcpxg&type=video",
-    "screenshot": "/pull/9521f1f5-b807-45a5-913e-b6776f97e323?key=3QgN7ehujKOHpsY0VthcpfqZjQDdcpxg&type=screenshot"
+    "video": "127.0.0.1/pull/5a255f04c09e5f54e3384da5?key=6TGkDtZka1MnzyROORxPRrQQuXS8AbmH",
+    "screenshot": "127.0.0.1/pull/5a255f04c09e5f54e3384dab?key=6TGkDtZka1MnzyROORxPRrQQuXS8AbmH"
   }
+}
+```
+
+### Example FAILED response to webhook
+```
+{
+  "task_id": "fbfc3e73-5ae8-43ba-a30f-fa25e23f3429",
+  "status": "FAILED",
+  "timestamp_now": 1512398950,
+  "exception": "No active exception to reraise"
 }
 ```
 

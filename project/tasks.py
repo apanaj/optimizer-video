@@ -16,10 +16,42 @@ from celery import Task
 from extensions import celery_app
 from config import DefaultConfig
 
+db = MongoClient(
+    host=os.environ.get('MONGO_HOST'),
+    port=int(os.environ.get('MONGO_PORT', 27017)),
+    connect=False
+).video_optimizer
+
+
+def send_callback_request(webhook, json_data, file_object_id=None):
+    for i in range(DefaultConfig.RETRY_CALLBACK_REQUEST_COUNT):
+        try:
+            response = requests.post(webhook, json=json_data)
+            reason = response.reason
+
+            if file_object_id is not None:
+                db.fs.files.update_one(
+                    {'_id': file_object_id},
+                    {'$set': {'callback_response': reason}})
+            if reason == 'OK':
+                print('****************** OK')
+                return True
+        except requests.exceptions.ConnectionError:
+            # TODO: CHECK CELERY KILL
+            if file_object_id is not None:
+                db.fs.files.update_one(
+                    {'_id': file_object_id},
+                    {'$set': {'callback_response': 'ConnectionError'}})
+                print('ConnectionError- FileID: {}'.format(file_object_id))
+            print('****************** NOK')
+
+        time.sleep(2 ** (i + 2))
+
+    return False
+
 
 class CallbackTask(Task):
     def on_success(self, retval, task_id, args, kwargs):
-        db = MongoClient().video_optimizer
         fs = gridfs.GridFS(db)
 
         converted_filepath = retval['video_file']
@@ -67,9 +99,11 @@ class CallbackTask(Task):
 
         doc = fs.get(video_file_id)._file
 
-        def send_callback_request():
-            response = requests.post(webhook, json={
+        send_callback_request(
+            webhook=webhook,
+            json_data={
                 'task_id': task_id,
+                'status': 'OK',
                 'key': str(doc['_id']),
                 'timestamp_now': calendar.timegm(time.gmtime()),
                 'file': {
@@ -79,34 +113,27 @@ class CallbackTask(Task):
                     'date_upload': str(doc['uploadDate']),
                 },
                 '_link': {
-                    'video': '/pull/{}?key={}&type={}'.format(
-                        task_id, doc['key'], 'video'),
-                    'screenshot': '/pull/{}?key={}&type={}'.format(
-                        task_id, doc['key'], 'screenshot'),
+                    'video': '{}/pull/{}?key={}'.format(
+                        DefaultConfig.SERVER_HOST, video_file_id, doc['key']),
+                    'screenshot': '{}/pull/{}?key={}'.format(
+                        DefaultConfig.SERVER_HOST, screenshot_file_id, doc['key']),
                 }
-            })
-            print(response.status_code)
-            return response.reason
-
-        for i in range(DefaultConfig.RETRY_CALLBACK_REQUEST_COUNT):
-            try:
-                reason = send_callback_request()
-                db.fs.files.update_one(
-                    {'_id': video_file_id},
-                    {'$set': {'callback_response': reason}})
-                if reason == 'OK':
-                    break
-            except requests.exceptions.ConnectionError:
-                db.fs.files.update_one(
-                    {'_id': video_file_id},
-                    {'$set': {'callback_response': 'ConnectionError'}})
-                print('ConnectionError- FileID: {}'.format(video_file_id))
-            time.sleep(2 ** (i+2))
-
-        print('/pull/{}?key={}&type={}'.format(task_id, doc['key'], 'screenshot'))
+            },
+            file_object_id=video_file_id
+        )
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        pass
+        # TODO: send file_object_id
+        send_callback_request(
+            webhook=kwargs['webhook'],
+            json_data={
+                'task_id': task_id,
+                'status': 'FAILED',
+                'timestamp_now': calendar.timegm(time.gmtime()),
+                'exception': str(exc)
+            },
+            file_object_id=None
+        )
 
 
 def take_screenshot(minutes, seconds, input_file, screenshot_file):
@@ -114,7 +141,6 @@ def take_screenshot(minutes, seconds, input_file, screenshot_file):
     position = '00:00:' + str(random.randint(1, max_second))
     cmd_screenshot = 'ffmpeg -y -ss {position} -i {input_file} -vframes 1 -q:v 2 {screenshot_file}'.format(
         position=position, input_file=input_file, screenshot_file=screenshot_file)
-    print(cmd_screenshot)
     process = subprocess.Popen(cmd_screenshot,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
@@ -152,7 +178,6 @@ def video_converter(self, input_file, watermark, client_ip, webhook):
     options = overlay_option + '-vcodec h264 -acodec aac -strict -2'
     cmd_convert = 'ffmpeg -y -i {input_file} {options} {output_file}'.format(
         input_file=input_file, options=options, output_file=output_file)
-    print(cmd_convert)
     process = subprocess.Popen(cmd_convert,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
@@ -168,7 +193,6 @@ def video_converter(self, input_file, watermark, client_ip, webhook):
     frames = None
 
     for line in process.stdout:
-        print(line)
         if not duration_match:
             pattern = 'Duration:\s+(\d{2}):(\d{2}):([-+]?[0-9]*\.?[0-9]+.), start:'
             # pattern = 'Duration:\s+(\d{2}):(\d{2}):(\d{2}), start:'

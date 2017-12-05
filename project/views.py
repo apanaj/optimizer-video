@@ -3,6 +3,7 @@ import uuid
 import os
 import hashlib
 
+from bson import ObjectId
 from flask import Blueprint, request, current_app, jsonify, url_for, \
     make_response
 from urllib.parse import urlparse
@@ -121,8 +122,13 @@ def get_video():
 
         filename = save_video_from_url(url)
 
-    task = video_converter.apply_async(args=[
-        filename, watermark, request.remote_addr, webhook.url])
+    task = video_converter.apply_async(kwargs=dict(
+        input_file=filename,
+        watermark=watermark,
+        client_ip=request.remote_addr,
+        webhook=webhook.url
+    ))
+
     return jsonify(
         {
             'status': 'ACCEPTED',
@@ -164,30 +170,22 @@ def task_status(task_id):
     return '', 204, response
 
 
-@mod.route('/pull/<task_id>')
-def pull_file(task_id):
+@mod.route('/pull/<file_id>')
+def pull_file(file_id):
     key = request.args.get('key')
     if not key:
         return jsonify({'error': '`key` argument is requirement'}), 400
 
-    file_type = request.args.get('type')
-    if not file_type:
-        return jsonify({'error': '`type` argument is requirement'}), 400
-
-    file_type = file_type.lower()
-    if file_type not in ['video', 'screenshot']:
-        return jsonify({'error': '`type` is not valid'}), 400
-
-    file = fs.find_one({'task_id': task_id, 'key': key, 'type': file_type})
-    if file is None:
+    grid_out = fs.find_one({'_id': ObjectId(file_id), 'key': key})
+    if grid_out is None:
         return jsonify({'error': 'File not found'}), 404
 
-    response = make_response(file.read())
+    response = make_response(grid_out.read())
     mimtype_dict = {
         'video': 'video/mp4',
         'screenshot': 'image/jpeg'
     }
-    response.mimetype = mimtype_dict[file_type]
+    response.mimetype = mimtype_dict[grid_out._file['type']]
     response.headers['Content-Disposition'] = 'attachment'
 
     return response
