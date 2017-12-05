@@ -39,7 +39,8 @@ def check_url_file_size(url):
 
 
 def save_video_from_url(url):
-    check_url_file_size(url)
+    ## its not necessary
+    # check_url_file_size(url)
 
     md5sum(url)
     disassembled = urlparse(url)
