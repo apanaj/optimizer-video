@@ -107,6 +107,10 @@ class CallbackTask(Task):
 
         doc = fs.get(video_file_id)._file
 
+        server_address = '{protocol}://{host}'.format(
+            protocol=DefaultConfig.SERVER_PROTOCOL,
+            host=DefaultConfig.SERVER_HOST
+        )
         send_callback_request(
             webhook=webhook,
             json_data={
@@ -122,9 +126,9 @@ class CallbackTask(Task):
                 },
                 '_link': {
                     'video': '{}/pull/{}?key={}'.format(
-                        DefaultConfig.SERVER_HOST, video_file_id, doc['key']),
+                        server_address, video_file_id, doc['key']),
                     'screenshot': '{}/pull/{}?key={}'.format(
-                        DefaultConfig.SERVER_HOST, screenshot_file_id, doc['key']),
+                        server_address, screenshot_file_id, doc['key']),
                 }
             },
             file_object_id=video_file_id

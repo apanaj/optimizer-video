@@ -7,6 +7,7 @@ class DefaultConfig(object):
     MONGO_PORT = int(os.environ.get('MONGO_PORT', 27017))
     CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'pyamqp://')
     CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost')
+    SERVER_PROTOCOL = 'http'
     SERVER_HOST = os.environ.get('SERVER_HOST', '127.0.0.1:5000')
     ONLY_PULL_FROM_SERVER_HOST = True
     URL_CACHE = False
