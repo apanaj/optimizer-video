@@ -6,6 +6,7 @@ import subprocess
 import re
 import gridfs
 import os
+import glob
 import requests
 
 from PIL import Image, ImageStat
@@ -35,6 +36,7 @@ def send_callback_request(webhook, json_data, file_object_id=None):
                     {'$set': {'callback_response': reason}})
             if reason == 'OK':
                 print('****************** OK')
+                print(webhook)
                 return True
         except requests.exceptions.ConnectionError:
             # TODO: CHECK CELERY KILL
@@ -44,6 +46,7 @@ def send_callback_request(webhook, json_data, file_object_id=None):
                     {'$set': {'callback_response': 'ConnectionError'}})
                 print('ConnectionError- FileID: {}'.format(file_object_id))
             print('****************** NOK')
+            print(webhook)
 
         time.sleep(2 ** (i + 2))
 
@@ -55,6 +58,8 @@ class CallbackTask(Task):
         fs = gridfs.GridFS(db)
 
         converted_filepath = retval['video_file']
+        print(converted_filepath)
+        print('---------------')
         seconds = retval['seconds']
         screenshot_filepath = retval['screenshot_file']
         client_ip = retval['client_ip']
@@ -69,8 +74,7 @@ class CallbackTask(Task):
             open(converted_filepath, 'rb'),
             key=key,
             task_id=task_id,
-            # filename=task_id + '.mp4',
-            filename=task_id,
+            filename=task_id + '.mp4',
             type='video',
             seconds=seconds,
             clientIP=client_ip,
@@ -91,12 +95,15 @@ class CallbackTask(Task):
 
         filepath = dirname(converted_filepath)
         converted_filename = basename(converted_filepath)
-        origin_filepath = join(filepath,
-                               converted_filename.replace('convert-', ''))
 
-        os.remove(origin_filepath)
-        os.remove(converted_filepath)
-        os.remove(screenshot_filepath)
+        files_pattern = join(
+            filepath,
+            '*{pattern}*'.format(
+                pattern=converted_filename.replace('convert-', '').replace('.mp4', '')
+            )
+        )
+        for f in glob.glob(files_pattern):
+            os.remove(f)
 
         doc = fs.get(video_file_id)._file
 
@@ -155,6 +162,12 @@ def is_good_screenshot(image_path):
     min_value, max_value = stat.extrema[0]
 
     return False if max_value - min_value < 50 else True
+
+
+def purge(folder, pattern):
+    for f in os.listdir(folder):
+        if re.search(pattern, f):
+            os.remove(os.path.join(folder, f))
 
 
 @celery_app.task(base=CallbackTask, bind=True)
