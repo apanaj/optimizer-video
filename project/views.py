@@ -94,13 +94,14 @@ def get_video():
         # ----------------------------------
         if 'file' not in request.files:
             return jsonify({'error': '`file` key not found in form data'}), 400
-        filename = save_video_from_form(request.files['file'])
 
         webhook = get_webhook(request.form.get('webhook'))
 
         watermark = request.form.get('watermark')
         if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
             return jsonify({'error': '`watermark` is not valid'}), 400
+
+        filename = save_video_from_form(request.files['file'])
     else:
         # ----------------------------------
         # ----------- GET METHOD -----------
@@ -114,11 +115,6 @@ def get_video():
         watermark = request.args.get('watermark')
         if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
             return jsonify({'error': '`watermark` is not valid'}), 400
-
-        disassembled = urlparse(url)
-        orig_filename, file_ext = splitext(basename(disassembled.path))
-        if not file_ext:
-            return jsonify({'error': '`file extension` is not valid'}), 400
 
         filename = save_video_from_url(url)
 
@@ -172,6 +168,10 @@ def task_status(task_id):
 
 @mod.route('/pull/<file_id>')
 def pull_file(file_id):
+    if current_app.config['ONLY_PULL_FROM_SERVER_HOST'] and \
+                    current_app.config['SERVER_HOST'] != request.host:
+        return jsonify({'error': '`SERVER_HOST` is not valid'}), 403
+
     key = request.args.get('key')
     if not key:
         return jsonify({'error': '`key` argument is requirement'}), 400
