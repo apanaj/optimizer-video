@@ -24,7 +24,7 @@ class DeploymentConfig(DefaultConfig):
         # 'http://allowed-web-hook/',
         # 'http://api.apanajapp.com/v2/upgrade',
         # 'http://192.168.88.248:5001',
-        'http://apanaj_web-server/posts/video'
+        'http://apanaj_web-server/xcontent/webhook'
     ]
 
 
@@ -34,5 +34,5 @@ class DevelopmentConfig(DefaultConfig):
     MEDIA_FOLDER = os.path.join(BASE_DIR, 'media/')
     WEB_HOOKS = [
         'http://127.0.0.1:5001',
-        'http://apanaj_web-server/posts/video'
+        'http://apanaj_web-server/xcontent/webhook'
     ]
