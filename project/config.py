@@ -34,5 +34,6 @@ class DevelopmentConfig(DefaultConfig):
     MEDIA_FOLDER = os.path.join(BASE_DIR, 'media/')
     WEB_HOOKS = [
         'http://127.0.0.1:5001',
+        'http://127.0.0.1:5001/xcontent/webhook',
         'http://apanaj_web-server/xcontent/webhook'
     ]

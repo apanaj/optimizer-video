@@ -79,7 +79,11 @@ def get_webhook(webhook_encode):
         raise WebhookRequiredException
 
     webhook = furl(webhook_encode)
-    webhook_path = webhook.origin + webhook.pathstr
+    webhook_pathstr = webhook.pathstr
+    if webhook.pathstr.endswith('/'):
+        webhook_pathstr = webhook.pathstr[:-1]
+
+    webhook_path = webhook.origin + webhook_pathstr
     if webhook_path not in current_app.config['WEB_HOOKS']:
         raise WebhookNotValidException
 
