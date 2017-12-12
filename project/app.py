@@ -1,8 +1,6 @@
 from flask import Flask, jsonify
 
-from exception import LargeFileException, FileSizeException, \
-    WebhookRequiredException, WebhookNotValidException, \
-    FileNotFoundException, FileNotValidException, FileNotDownloadException
+from exc import AppException
 from extensions import celery_app
 from views import mod
 
@@ -13,33 +11,9 @@ def create_app(config, app_name):
     app.register_blueprint(mod)
     configure_celery(app)
 
-    @app.errorhandler(FileSizeException)
-    def file_size_exception(error):
-        return jsonify(error='File not found or file length is zero'), 400
-
-    @app.errorhandler(LargeFileException)
-    def large_file_exception(error):
-        return jsonify(error='File is too large'), 413
-
-    @app.errorhandler(FileNotFoundException)
-    def file_not_found_exception(error):
-        return jsonify(error='File not found'), 404
-
-    @app.errorhandler(FileNotValidException)
-    def file_not_valid_exception(error):
-        return jsonify(error='File is not valid'), 400
-
-    @app.errorhandler(FileNotDownloadException)
-    def file_not_download_exception(error):
-        return jsonify(error='File not downloaded'), 400
-
-    @app.errorhandler(WebhookRequiredException)
-    def webhook_required_exception(error):
-        return jsonify({'error': '`webhook` parameter required'}), 400
-
-    @app.errorhandler(WebhookNotValidException)
-    def webhook_not_valid_exception(error):
-        return jsonify({'error': '`webhook` is not valid'}), 403
+    @app.errorhandler(AppException)
+    def exception_handler(error):
+        return jsonify(error=error.message), error.status
 
     return app
 

@@ -12,9 +12,8 @@ from urllib.parse import urlparse
 from os.path import splitext, basename
 from furl import furl
 
-from exception import FileNotFoundException, FileNotValidException, \
-    WebhookRequiredException, WebhookNotValidException, \
-    FileNotDownloadException
+
+import exc
 from extensions import fs
 from tasks import video_converter
 
@@ -42,10 +41,10 @@ def check_url_file(url):
     c.close()
 
     if response_code == 404:
-        raise FileNotFoundException
+        raise exc.FileNotFoundException
 
     if response_code >= 400:
-        raise FileNotValidException
+        raise exc.FileNotValidException
 
 
 def save_video_from_url(url):
@@ -78,7 +77,7 @@ def save_video_from_url(url):
             shell=True)
         download_process_result = download_process.communicate()
         if ' failed: ' in download_process_result[0].decode('iso-8859-1'):
-            raise FileNotDownloadException
+            raise exc.FileNotDownloadException
 
     return source_filepath
 
@@ -93,12 +92,12 @@ def save_video_from_form(file):
 
 def get_webhook(webhook_encode):
     if not webhook_encode:
-        raise WebhookRequiredException
+        raise exc.WebhookRequiredException
 
     webhook = furl(webhook_encode)
     webhook_path = webhook.origin + webhook.pathstr.rstrip('/')
     if webhook_path not in current_app.config['WEB_HOOKS']:
-        raise WebhookNotValidException
+        raise exc.WebhookNotValidException
 
     return webhook
 
@@ -116,7 +115,7 @@ def get_video():
 
         watermark = request.form.get('watermark')
         if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
-            return jsonify({'error': '`watermark` is not valid'}), 400
+            raise exc.WatermarkIsNotValidException
 
         filename = save_video_from_form(request.files['file'])
     else:
@@ -131,7 +130,7 @@ def get_video():
 
         watermark = request.args.get('watermark')
         if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
-            return jsonify({'error': '`watermark` is not valid'}), 400
+            raise exc.WatermarkIsNotValidException
 
         filename = save_video_from_url(url)
 
@@ -187,7 +186,7 @@ def task_status(task_id):
 def pull_file(file_id):
     if current_app.config['ONLY_PULL_FROM_SERVER_HOST'] and \
                     current_app.config['SERVER_HOST'] != request.host:
-        return jsonify({'error': '`SERVER_HOST` is not valid'}), 403
+        raise exc.ServerHostIsNotValidException
 
     key = request.args.get('key')
     if not key:
@@ -195,7 +194,7 @@ def pull_file(file_id):
 
     grid_out = fs.find_one({'_id': ObjectId(file_id), 'key': key})
     if grid_out is None:
-        return jsonify({'error': 'File not found'}), 404
+        raise exc.FileNotFoundException
 
     response = make_response(grid_out.read())
     mimtype_dict = {
