@@ -14,6 +14,10 @@ class FileNotValidException(Exception):
     pass
 
 
+class FileNotDownloadException(Exception):
+    pass
+
+
 class WebhookRequiredException(Exception):
     pass
 

@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 
 from exception import LargeFileException, FileSizeException, \
     WebhookRequiredException, WebhookNotValidException, \
-    FileNotFoundException, FileNotValidException
+    FileNotFoundException, FileNotValidException, FileNotDownloadException
 from extensions import celery_app
 from views import mod
 
@@ -28,6 +28,10 @@ def create_app(config, app_name):
     @app.errorhandler(FileNotValidException)
     def file_not_valid_exception(error):
         return jsonify(error='File is not valid'), 400
+
+    @app.errorhandler(FileNotDownloadException)
+    def file_not_download_exception(error):
+        return jsonify(error='File not downloaded'), 400
 
     @app.errorhandler(WebhookRequiredException)
     def webhook_required_exception(error):

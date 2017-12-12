@@ -13,7 +13,8 @@ from os.path import splitext, basename
 from furl import furl
 
 from exception import FileNotFoundException, FileNotValidException, \
-    WebhookRequiredException, WebhookNotValidException
+    WebhookRequiredException, WebhookNotValidException, \
+    FileNotDownloadException
 from extensions import fs
 from tasks import video_converter
 
@@ -66,10 +67,19 @@ def save_video_from_url(url):
     source_filepath = current_app.config['MEDIA_FOLDER'] + saved_filename
 
     if not file_exists:
-        cmd_download_video = 'wget --no-check-certificate -O {filepath} {url}'.format(
+        cmd_download = 'wget --no-check-certificate -O {filepath} {url}'.format(
             filepath=source_filepath, url=url)
-        print(cmd_download_video)
-        subprocess.Popen(cmd_download_video, shell=True).communicate()
+        # print(cmd_download)
+
+        download_process = subprocess.Popen(
+            cmd_download,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=True)
+        download_process_result = download_process.communicate()
+        if ' failed: ' in download_process_result[0].decode('iso-8859-1'):
+            raise FileNotDownloadException
+
     return source_filepath
 
 
