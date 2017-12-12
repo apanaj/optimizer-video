@@ -13,6 +13,8 @@ RUN pip install uwsgi
 ## https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu
 ### Changes from the mentioned instructions are marked with: (!)
 
+RUN export MAKEFLAGS="-j4"
+
 # Get the dependencies
 RUN apt-get update -qq && apt-get -y install \
   autoconf \
