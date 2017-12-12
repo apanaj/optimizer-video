@@ -8,6 +8,7 @@ import gridfs
 import os
 import glob
 import requests
+import traceback
 
 from PIL import Image, ImageStat
 from os.path import splitext, split, join, dirname, basename
@@ -138,7 +139,8 @@ class CallbackTask(Task):
                 'task_id': task_id,
                 'status': 'FAILED',
                 'timestamp_now': calendar.timegm(time.gmtime()),
-                'exception': str(exc)
+                'exception': str(exc),
+                'traceback': traceback.format_exc()
             },
             file_object_id=None
         )
