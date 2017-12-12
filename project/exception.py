@@ -6,6 +6,14 @@ class FileSizeException(Exception):
     pass
 
 
+class FileNotFoundException(Exception):
+    pass
+
+
+class FileNotValidException(Exception):
+    pass
+
+
 class WebhookRequiredException(Exception):
     pass
 

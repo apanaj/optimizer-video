@@ -2,6 +2,8 @@ import subprocess
 import uuid
 import os
 import hashlib
+import pycurl
+from io import BytesIO
 
 from bson import ObjectId
 from flask import Blueprint, request, current_app, jsonify, url_for, \
@@ -10,7 +12,7 @@ from urllib.parse import urlparse
 from os.path import splitext, basename
 from furl import furl
 
-from exception import LargeFileException, FileSizeException, \
+from exception import FileNotFoundException, FileNotValidException, \
     WebhookRequiredException, WebhookNotValidException
 from extensions import fs
 from tasks import video_converter
@@ -24,24 +26,29 @@ def md5sum(string):
     return m.hexdigest()
 
 
-def check_url_file_size(url):
-    cmd_check_file_size = "wget --spider " + url + " 2>&1 | awk '/Length/ {print $2}'; exit 0"
-    try:
-        file_size = int(subprocess.check_output(cmd_check_file_size,
-                                                stderr=subprocess.STDOUT,
-                                                shell=True))
-    except ValueError:
-        raise FileSizeException
+def check_url_file(url):
+    buffer = BytesIO()
 
-    if file_size > current_app.config['MAX_CONTENT_LENGTH']:
-        raise LargeFileException
+    c = pycurl.Curl()
+    c.setopt(c.URL, url)
+    c.setopt(c.HEADER, True)
+    c.setopt(c.NOBODY, True)
+    c.setopt(c.WRITEDATA, buffer)
+    c.perform()
 
-    return file_size
+    response_code = c.getinfo(c.RESPONSE_CODE)
+    # total_time = c.getinfo(c.TOTAL_TIME)
+    c.close()
+
+    if response_code == 404:
+        raise FileNotFoundException
+
+    if response_code >= 400:
+        raise FileNotValidException
 
 
 def save_video_from_url(url):
-    ## its not necessary
-    # check_url_file_size(url)
+    check_url_file(url)
 
     md5sum(url)
     disassembled = urlparse(url)
@@ -79,11 +86,7 @@ def get_webhook(webhook_encode):
         raise WebhookRequiredException
 
     webhook = furl(webhook_encode)
-    webhook_pathstr = webhook.pathstr
-    if webhook.pathstr.endswith('/'):
-        webhook_pathstr = webhook.pathstr[:-1]
-
-    webhook_path = webhook.origin + webhook_pathstr
+    webhook_path = webhook.origin + webhook.pathstr.rstrip('/')
     if webhook_path not in current_app.config['WEB_HOOKS']:
         raise WebhookNotValidException
 
