@@ -3,8 +3,6 @@ version: '2'
 services:
 
   apanaj_optimizer-video:
-    ports:
-      - "8700:80"
     networks:
       - video-network
       - network-front-proxy

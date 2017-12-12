@@ -1,0 +1,7 @@
+version: '2'
+
+services:
+
+  apanaj_optimizer-video:
+    environment:
+      - SERVER_HOST=ir.ovids.apanajapp.com
