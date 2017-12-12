@@ -35,5 +35,6 @@ class DevelopmentConfig(DefaultConfig):
     WEB_HOOKS = [
         'http://127.0.0.1:5001',
         'http://127.0.0.1:5001/xcontent/webhook',
+        'http://apanaj_web-server:5001/v2/xcontent/webhook',
         'http://apanaj_web-server/xcontent/webhook'
     ]

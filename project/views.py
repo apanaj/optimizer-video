@@ -2,6 +2,8 @@ import subprocess
 import uuid
 import os
 import hashlib
+import pycurl
+from io import BytesIO
 
 from bson import ObjectId
 from flask import Blueprint, request, current_app, jsonify, url_for, \
@@ -10,8 +12,8 @@ from urllib.parse import urlparse
 from os.path import splitext, basename
 from furl import furl
 
-from exception import LargeFileException, FileSizeException, \
-    WebhookRequiredException, WebhookNotValidException
+
+import exc
 from extensions import fs
 from tasks import video_converter
 
@@ -24,24 +26,29 @@ def md5sum(string):
     return m.hexdigest()
 
 
-def check_url_file_size(url):
-    cmd_check_file_size = "wget --spider " + url + " 2>&1 | awk '/Length/ {print $2}'; exit 0"
-    try:
-        file_size = int(subprocess.check_output(cmd_check_file_size,
-                                                stderr=subprocess.STDOUT,
-                                                shell=True))
-    except ValueError:
-        raise FileSizeException
+def check_url_file(url):
+    buffer = BytesIO()
 
-    if file_size > current_app.config['MAX_CONTENT_LENGTH']:
-        raise LargeFileException
+    c = pycurl.Curl()
+    c.setopt(c.URL, url)
+    c.setopt(c.HEADER, True)
+    c.setopt(c.NOBODY, True)
+    c.setopt(c.WRITEDATA, buffer)
+    c.perform()
 
-    return file_size
+    response_code = c.getinfo(c.RESPONSE_CODE)
+    # total_time = c.getinfo(c.TOTAL_TIME)
+    c.close()
+
+    if response_code == 404:
+        raise exc.FileNotFoundException
+
+    if response_code >= 400:
+        raise exc.FileNotValidException
 
 
 def save_video_from_url(url):
-    ## its not necessary
-    # check_url_file_size(url)
+    check_url_file(url)
 
     md5sum(url)
     disassembled = urlparse(url)
@@ -59,10 +66,19 @@ def save_video_from_url(url):
     source_filepath = current_app.config['MEDIA_FOLDER'] + saved_filename
 
     if not file_exists:
-        cmd_download_video = 'wget --no-check-certificate -O {filepath} {url}'.format(
+        cmd_download = 'wget --no-check-certificate -O {filepath} {url}'.format(
             filepath=source_filepath, url=url)
-        print(cmd_download_video)
-        subprocess.Popen(cmd_download_video, shell=True).communicate()
+        # print(cmd_download)
+
+        download_process = subprocess.Popen(
+            cmd_download,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=True)
+        download_process_result = download_process.communicate()
+        if ' failed: ' in download_process_result[0].decode('iso-8859-1'):
+            raise exc.FileNotDownloadException
+
     return source_filepath
 
 
@@ -76,16 +92,12 @@ def save_video_from_form(file):
 
 def get_webhook(webhook_encode):
     if not webhook_encode:
-        raise WebhookRequiredException
+        raise exc.WebhookRequiredException
 
     webhook = furl(webhook_encode)
-    webhook_pathstr = webhook.pathstr
-    if webhook.pathstr.endswith('/'):
-        webhook_pathstr = webhook.pathstr[:-1]
-
-    webhook_path = webhook.origin + webhook_pathstr
+    webhook_path = webhook.origin + webhook.pathstr.rstrip('/')
     if webhook_path not in current_app.config['WEB_HOOKS']:
-        raise WebhookNotValidException
+        raise exc.WebhookNotValidException
 
     return webhook
 
@@ -103,7 +115,7 @@ def get_video():
 
         watermark = request.form.get('watermark')
         if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
-            return jsonify({'error': '`watermark` is not valid'}), 400
+            raise exc.WatermarkIsNotValidException
 
         filename = save_video_from_form(request.files['file'])
     else:
@@ -118,7 +130,7 @@ def get_video():
 
         watermark = request.args.get('watermark')
         if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
-            return jsonify({'error': '`watermark` is not valid'}), 400
+            raise exc.WatermarkIsNotValidException
 
         filename = save_video_from_url(url)
 
@@ -174,7 +186,7 @@ def task_status(task_id):
 def pull_file(file_id):
     if current_app.config['ONLY_PULL_FROM_SERVER_HOST'] and \
                     current_app.config['SERVER_HOST'] != request.host:
-        return jsonify({'error': '`SERVER_HOST` is not valid'}), 403
+        raise exc.ServerHostIsNotValidException
 
     key = request.args.get('key')
     if not key:
@@ -182,7 +194,7 @@ def pull_file(file_id):
 
     grid_out = fs.find_one({'_id': ObjectId(file_id), 'key': key})
     if grid_out is None:
-        return jsonify({'error': 'File not found'}), 404
+        raise exc.FileNotFoundException
 
     response = make_response(grid_out.read())
     mimtype_dict = {

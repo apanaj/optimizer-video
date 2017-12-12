@@ -8,6 +8,7 @@ import gridfs
 import os
 import glob
 import requests
+import traceback
 
 from PIL import Image, ImageStat
 from os.path import splitext, split, join, dirname, basename
@@ -28,15 +29,11 @@ def send_callback_request(webhook, json_data, file_object_id=None):
     for i in range(DefaultConfig.RETRY_CALLBACK_REQUEST_COUNT):
         try:
             response = requests.post(webhook, json=json_data)
-            reason = response.reason
-
             if file_object_id is not None:
                 db.fs.files.update_one(
                     {'_id': file_object_id},
-                    {'$set': {'callback_response': reason}})
-            if reason == 'OK':
-                print('****************** OK')
-                print(webhook)
+                    {'$set': {'callback_response': response.reason}})
+            if 200 <= response.status_code <= 299:
                 return True
         except requests.exceptions.ConnectionError:
             # TODO: CHECK CELERY KILL
@@ -58,8 +55,6 @@ class CallbackTask(Task):
         fs = gridfs.GridFS(db)
 
         converted_filepath = retval['video_file']
-        print(converted_filepath)
-        print('---------------')
         seconds = retval['seconds']
         screenshot_filepath = retval['screenshot_file']
         client_ip = retval['client_ip']
@@ -80,8 +75,8 @@ class CallbackTask(Task):
             clientIP=client_ip,
             webhook=webhook,
         )
-        print('VideoFileID: {}'.format(video_file_id))
-        print('Key: {}'.format(key))
+        # print('VideoFileID: {}'.format(video_file_id))
+        # print('Key: {}'.format(key))
 
         screenshot_file_id = fs.put(
             open(screenshot_filepath, 'rb'),
@@ -90,8 +85,8 @@ class CallbackTask(Task):
             filename=task_id + '.jpg',
             type='screenshot',
         )
-        print('ScreenshotFileID: {}'.format(screenshot_file_id))
-        print('Key: {}'.format(key))
+        # print('ScreenshotFileID: {}'.format(screenshot_file_id))
+        # print('Key: {}'.format(key))
 
         filepath = dirname(converted_filepath)
         converted_filename = basename(converted_filepath)
@@ -134,6 +129,8 @@ class CallbackTask(Task):
             file_object_id=video_file_id
         )
 
+        print('*** Task {} Successfully Completed ***'.format(task_id))
+
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         # TODO: send file_object_id
         send_callback_request(
@@ -142,7 +139,8 @@ class CallbackTask(Task):
                 'task_id': task_id,
                 'status': 'FAILED',
                 'timestamp_now': calendar.timegm(time.gmtime()),
-                'exception': str(exc)
+                'exception': str(exc),
+                'traceback': traceback.format_exc()
             },
             file_object_id=None
         )
