@@ -19,7 +19,7 @@ def webhook():
     return '', 200
 
 
-@app.route("/xcontent/webhook", methods=['POST'])
+@app.route("/v2/xcontent/webhook/", methods=['POST'])
 def webhook2():
     print(request.json)
     return '', 200
