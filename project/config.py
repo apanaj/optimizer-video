@@ -22,7 +22,7 @@ class DeploymentConfig(DefaultConfig):
     SERVER_HOST = os.environ.get('SERVER_HOST', 'apanaj_optimizer-video')
     WEB_HOOKS = [
         # 'http://allowed-web-hook/',
-        'http://api.apanajapp.com/xcontent/webhook'
+        'http://api.apanajapp.com/xcontent/webhook',
         'http://apanaj_web-server/xcontent/webhook'
     ]
 
