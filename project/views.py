@@ -105,11 +105,9 @@ def get_webhook(webhook_encode):
 @mod.route('/upload', methods=['GET', 'POST'])
 def get_video():
     if request.method == 'POST':
-        # ----------------------------------
-        # ---------- POST METHOD -----------
-        # ----------------------------------
+        # ############ POST METHOD ############
         if 'file' not in request.files:
-            return jsonify({'error': '`file` key not found in form data'}), 400
+            raise exc.FileKeyNotFoundException
 
         webhook = get_webhook(request.form.get('webhook'))
 
@@ -119,12 +117,10 @@ def get_video():
 
         filename = save_video_from_form(request.files['file'])
     else:
-        # ----------------------------------
-        # ----------- GET METHOD -----------
-        # ----------------------------------
+        # ############ GET METHOD ############
         url = furl(request.args.get('url')).url
         if not url:
-            return jsonify({'error': '`url` parameter required'}), 400
+            raise exc.UrlArgNotFoundException
 
         webhook = get_webhook(request.args.get('webhook'))
 

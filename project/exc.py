@@ -45,3 +45,18 @@ class WatermarkIsNotValidException(AppException):
 class ServerHostIsNotValidException(AppException):
     message = '`SERVER_HOST` is not valid'
     status = 400
+
+
+class FileKeyNotFoundException(AppException):
+    message = '`file` key not found in form data'
+    status = 400
+
+
+class UrlArgNotFoundException(AppException):
+    message = '`url` argument is requirement'
+    status = 400
+
+
+class KeyArgNotFoundException(AppException):
+    message = '`key` argument is requirement'
+    status = 400
