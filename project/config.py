@@ -14,6 +14,7 @@ class DefaultConfig(object):
     MAX_CONTENT_LENGTH = 80 * 1024 * 1024  # MB
     RETRY_CALLBACK_REQUEST_COUNT = 5
     WATERMARK_PADDING = 50
+    OUTPUT_VIDEO_HEIGHT = 360
 
 
 class DeploymentConfig(DefaultConfig):
