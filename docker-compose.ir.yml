@@ -3,5 +3,7 @@ version: '2'
 services:
 
   apanaj_optimizer-video:
+    ports:
+      - "8100:80"
     environment:
-      - SERVER_HOST=ir.ovids.apanajapp.com
+      - SERVER_HOST=185.4.1.178:8100
