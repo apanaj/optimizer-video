@@ -8,6 +8,11 @@ def download_example():
     return send_file('input.mp4', as_attachment=True)
 
 
+@app.route("/input.mkv")
+def download_example_mkv():
+    return send_file('input.mkv', as_attachment=True)
+
+
 @app.route("/small.mp4")
 def download_small_example():
     return send_file('small.mp4', as_attachment=True)
