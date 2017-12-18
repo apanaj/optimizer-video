@@ -3,5 +3,5 @@ version: '2'
 services:
 
   apanaj_optimizer-video:
-    ports:
-      - "9090:80"
+    environment:
+      - SERVER_HOST=apanaj_optimizer-video
