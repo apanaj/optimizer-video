@@ -191,7 +191,9 @@ def video_converter(self, input_file, watermark, client_ip, webhook):
     if overlay:
         overlay_option = '-i watermark.png -filter_complex {} '.format(overlay)
 
-    options = overlay_option + '-vcodec h264 -acodec aac -strict -2'
+    options = overlay_option + '-vf scale=-2:{} -vcodec h264 -acodec aac -strict -2'.format(
+        DefaultConfig.OUTPUT_VIDEO_HEIGHT
+    )
     cmd_convert = 'ffmpeg -y -i {input_file} {options} {output_file}'.format(
         input_file=input_file, options=options, output_file=output_file)
     process = subprocess.Popen(cmd_convert,
