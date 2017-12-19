@@ -25,7 +25,7 @@ services:
       - CELERY_BROKER_URL=pyamqp://opt-rabbitmq
       - CELERY_RESULT_BACKEND=redis://opt-redis
       - MEDIA_FOLDER=/data/vids/
-      - SERVER_HOST=apanaj_optimizer-video
+      - SERVER_HOST={{OPTIMIZER_HOST_NAME_IP}}
     volumes:
      - ./project/:/project
      - vol-optimizer-data:/data/vids/
