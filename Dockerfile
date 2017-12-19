@@ -1,7 +1,7 @@
 FROM python:3.6
 
 RUN apt-get update \
-	&& apt-get install -yq --fix-missing ca-certificates nginx gettext-base supervisor libcurl4-openssl-dev
+	&& apt-get install -yq --fix-missing ca-certificates nginx gettext-base supervisor libcurl4-openssl-dev exiftool
 
 RUN pip install uwsgi
 

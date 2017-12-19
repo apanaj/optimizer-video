@@ -1,3 +1,4 @@
+import json
 import string
 import random
 import calendar
@@ -55,6 +56,8 @@ class CallbackTask(Task):
         fs = gridfs.GridFS(db)
 
         converted_filepath = retval['video_file']
+        meta = get_meta_info(converted_filepath)
+
         seconds = retval['seconds']
         screenshot_filepath = retval['screenshot_file']
         client_ip = retval['client_ip']
@@ -74,6 +77,7 @@ class CallbackTask(Task):
             seconds=seconds,
             clientIP=client_ip,
             webhook=webhook,
+            meta=meta,
         )
         # print('VideoFileID: {}'.format(video_file_id))
         # print('Key: {}'.format(key))
@@ -119,6 +123,7 @@ class CallbackTask(Task):
                     'seconds': doc['seconds'],
                     'date_upload': str(doc['uploadDate']),
                 },
+                'meta': meta,
                 '_link': {
                     'video': '{}/pull/{}?key={}'.format(
                         server_address, video_file_id, doc['key']),
@@ -170,6 +175,23 @@ def purge(folder, pattern):
     for f in os.listdir(folder):
         if re.search(pattern, f):
             os.remove(os.path.join(folder, f))
+
+
+def get_meta_info(filename):
+    cmd_get_meta = "exiftool -j {filename}".format(filename=filename)
+    process = subprocess.Popen(cmd_get_meta,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               shell=True)
+    raw_result = process.communicate()
+    meta = json.loads(raw_result[0])[0]
+
+    pop_keys = ['SourceFile', 'FileName', 'Directory', 'FilePermissions']
+    for key in pop_keys:
+        if key in meta.keys():
+            meta.pop(key)
+
+    return meta
 
 
 @celery_app.task(base=CallbackTask, bind=True)
