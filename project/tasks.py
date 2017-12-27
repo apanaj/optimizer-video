@@ -152,8 +152,14 @@ class CallbackTask(Task):
 
 
 def take_screenshot(minutes, seconds, input_file, screenshot_file):
-    max_second = 59 if minutes >= 1 else seconds
-    position = '00:00:' + str(random.randint(1, max_second))
+    if seconds == 0:
+        second_position = '00'
+    else:
+        max_second = 59 if minutes >= 1 else seconds
+        second_position = str(random.randint(1, max_second))
+
+    position = '00:00:' + second_position
+
     cmd_screenshot = 'ffmpeg -y -ss {position} -i {input_file} -vframes 1 -q:v 2 {screenshot_file}'.format(
         position=position, input_file=input_file, screenshot_file=screenshot_file)
     process = subprocess.Popen(cmd_screenshot,
