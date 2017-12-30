@@ -115,10 +115,15 @@ def get_video():
         if watermark and watermark not in ['tr', 'tl', 'br', 'bl']:
             raise exc.WatermarkIsNotValidException
 
+        base_filename = request.files['file'].filename
         filename = save_video_from_form(request.files['file'])
     else:
         # ############ GET METHOD ############
-        url = furl(request.args.get('url')).url
+        furl_obj = furl(request.args.get('url'))
+        url = furl_obj.url
+        filepath = furl_obj.path
+        base_filename = basename(str(filepath))
+
         if not url:
             raise exc.UrlArgNotFoundException
 
@@ -131,6 +136,7 @@ def get_video():
         filename = save_video_from_url(url)
 
     task = video_converter.apply_async(kwargs=dict(
+        base_filename=base_filename,
         input_file=filename,
         watermark=watermark,
         client_ip=request.remote_addr,

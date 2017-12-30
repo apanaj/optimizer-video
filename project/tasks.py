@@ -55,6 +55,7 @@ class CallbackTask(Task):
     def on_success(self, retval, task_id, args, kwargs):
         fs = gridfs.GridFS(db)
 
+        base_filename = retval['base_filename']
         converted_filepath = retval['video_file']
         meta = get_meta_info(converted_filepath)
 
@@ -72,6 +73,7 @@ class CallbackTask(Task):
             open(converted_filepath, 'rb'),
             key=key,
             task_id=task_id,
+            base_filename=base_filename,
             filename=task_id + '.mp4',
             type='video',
             seconds=seconds,
@@ -118,6 +120,7 @@ class CallbackTask(Task):
                 'key': str(doc['_id']),
                 'timestamp_now': calendar.timegm(time.gmtime()),
                 'file': {
+                    'base_filename': doc['base_filename'],
                     'md5': doc['md5'],
                     'size': doc['length'],
                     'seconds': doc['seconds'],
@@ -201,7 +204,7 @@ def get_meta_info(filename):
 
 
 @celery_app.task(base=CallbackTask, bind=True)
-def video_converter(self, input_file, watermark, client_ip, webhook):
+def video_converter(self, base_filename, input_file, watermark, client_ip, webhook):
     path, filename = split(input_file)
     orig_filename, file_ext = splitext(filename)
     output_file = join(path, 'convert-' + orig_filename + '.mp4')
@@ -278,6 +281,7 @@ def video_converter(self, input_file, watermark, client_ip, webhook):
         'percent': 100,
         'status': 'Completed',
 
+        'base_filename': base_filename,
         'video_file': output_file,
         'seconds': hours * 3600 + minutes * 60 + seconds,
 
